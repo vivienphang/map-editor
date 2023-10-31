@@ -36,6 +36,7 @@ func (s *Service) getMaps(ctx context.Context) ([]db.Map, error) {
 	for _, row := range rows {
 		maps = append(maps, db.Map{
 			ID: row.ID,
+			Name: row.Name,
 			ImageUrl: row.ImageUrl,
 			CreatedAt: row.CreatedAt,
 		})
@@ -167,6 +168,6 @@ func (s *Service) updateZone(ctx context.Context, zone pgtype.Polygon, id string
 		log.Println(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Internal Server Error, please try again")
 	}
-	
+
 	return nil
 }
