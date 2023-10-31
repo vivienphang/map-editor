@@ -47,7 +47,7 @@ VALUES
 
 type CreateRouteParams struct {
 	Route     pgtype.Path `json:"route"`
-	MapID     uuid.UUID `json:"map_id"`
+	MapID     pgtype.UUID `json:"map_id"`
 	CreatedAt time.Time   `json:"created_at"`
 }
 
@@ -72,7 +72,7 @@ VALUES
 
 type CreateZoneParams struct {
 	Zone      pgtype.Polygon `json:"zone"`
-	MapID     uuid.UUID    `json:"map_id"`
+	MapID     pgtype.UUID    `json:"map_id"`
 	CreatedAt time.Time      `json:"created_at"`
 }
 
@@ -86,6 +86,18 @@ func (q *Queries) CreateZone(ctx context.Context, arg CreateZoneParams) (MapAnno
 		&i.MapID,
 	)
 	return i, err
+}
+
+const deleteMapById = `-- name: DeleteMapById :exec
+DELETE FROM
+    map
+WHERE
+    id = $1
+`
+
+func (q *Queries) DeleteMapById(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteMapById, id)
+	return err
 }
 
 const getMapById = `-- name: GetMapById :one
@@ -198,7 +210,7 @@ WHERE
     map_id = $1
 `
 
-func (q *Queries) GetRoutesByMapId(ctx context.Context, mapID uuid.UUID) ([]pgtype.Path, error) {
+func (q *Queries) GetRoutesByMapId(ctx context.Context, mapID pgtype.UUID) ([]pgtype.Path, error) {
 	rows, err := q.db.Query(ctx, getRoutesByMapId, mapID)
 	if err != nil {
 		return nil, err
@@ -275,7 +287,7 @@ WHERE
     map_id = $1
 `
 
-func (q *Queries) GetZonesByMapId(ctx context.Context, mapID uuid.UUID) ([]pgtype.Polygon, error) {
+func (q *Queries) GetZonesByMapId(ctx context.Context, mapID pgtype.UUID) ([]pgtype.Polygon, error) {
 	rows, err := q.db.Query(ctx, getZonesByMapId, mapID)
 	if err != nil {
 		return nil, err
@@ -293,4 +305,51 @@ func (q *Queries) GetZonesByMapId(ctx context.Context, mapID uuid.UUID) ([]pgtyp
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateMapById = `-- name: UpdateMapById :exec
+UPDATE
+    map
+SET
+    name = $2, image_url = $3, created_at = $4
+WHERE
+    id = $1
+`
+
+type UpdateMapByIdParams struct {
+	ID        uuid.UUID   `json:"id"`
+	Name      pgtype.Text `json:"name"`
+	ImageUrl  pgtype.Text `json:"image_url"`
+	CreatedAt time.Time   `json:"created_at"`
+}
+
+func (q *Queries) UpdateMapById(ctx context.Context, arg UpdateMapByIdParams) error {
+	_, err := q.db.Exec(ctx, updateMapById,
+		arg.ID,
+		arg.Name,
+		arg.ImageUrl,
+		arg.CreatedAt,
+	)
+	return err
+}
+
+const updateZoneById = `-- name: UpdateZoneById :exec
+UPDATE
+    map_annotations_zones
+SET
+    zone = $2,
+    created_at = $3
+WHERE
+    map_id = $1
+`
+
+type UpdateZoneByIdParams struct {
+	MapID     pgtype.UUID    `json:"map_id"`
+	Zone      pgtype.Polygon `json:"zone"`
+	CreatedAt time.Time      `json:"created_at"`
+}
+
+func (q *Queries) UpdateZoneById(ctx context.Context, arg UpdateZoneByIdParams) error {
+	_, err := q.db.Exec(ctx, updateZoneById, arg.MapID, arg.Zone, arg.CreatedAt)
+	return err
 }

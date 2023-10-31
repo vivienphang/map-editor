@@ -15,14 +15,17 @@ type Querier interface {
 	CreateMap(ctx context.Context, arg CreateMapParams) (Map, error)
 	CreateRoute(ctx context.Context, arg CreateRouteParams) (MapAnnotationsRoute, error)
 	CreateZone(ctx context.Context, arg CreateZoneParams) (MapAnnotationsZone, error)
+	DeleteMapById(ctx context.Context, id uuid.UUID) error
 	GetMapById(ctx context.Context, id uuid.UUID) (Map, error)
 	GetMaps(ctx context.Context) ([]Map, error)
 	GetPaths(ctx context.Context) ([]MapAnnotationsRoute, error)
 	GetRouteById(ctx context.Context, id uuid.UUID) (pgtype.Path, error)
-	GetRoutesByMapId(ctx context.Context, mapID uuid.UUID) ([]pgtype.Path, error)
+	GetRoutesByMapId(ctx context.Context, mapID pgtype.UUID) ([]pgtype.Path, error)
 	GetZoneById(ctx context.Context, id uuid.UUID) (pgtype.Polygon, error)
 	GetZones(ctx context.Context) ([]MapAnnotationsZone, error)
-	GetZonesByMapId(ctx context.Context, mapID uuid.UUID) ([]pgtype.Polygon, error)
+	GetZonesByMapId(ctx context.Context, mapID pgtype.UUID) ([]pgtype.Polygon, error)
+	UpdateMapById(ctx context.Context, arg UpdateMapByIdParams) error
+	UpdateZoneById(ctx context.Context, arg UpdateZoneByIdParams) error
 }
 
 var _ Querier = (*Queries)(nil)
