@@ -45,13 +45,9 @@ func (s *Service) getMaps(ctx context.Context) ([]db.Map, error) {
 
 func (s *Service) getZones(ctx context.Context, id string) ([]pgtype.Polygon, error) {
 	zones := make([]pgtype.Polygon, 0)
-	// uuid := &pgtype.UUID{}
-	// err := uuid.Scan(id)
-	// if err != nil {
-	// 	log.Println(err)
-	// 	return nil, echo.NewHTTPError(http.StatusNotAcceptable, "Invalid UUID value")
-	// }
-	rows, err := s.db.GetZonesByMapId(ctx, uuid.MustParse(id))
+	uuid := pgtype.UUID{}
+	uuid.Scan(id)
+	rows, err := s.db.GetZonesByMapId(ctx, uuid)
 	if err != nil {
 		log.Println(err)
 		return nil, echo.NewHTTPError(http.StatusNotFound, "UUID not found")
@@ -68,7 +64,9 @@ func (s *Service) getZones(ctx context.Context, id string) ([]pgtype.Polygon, er
 
 func (s *Service) getRoutes(ctx context.Context, id string) ([]pgtype.Path, error) {
 	routes := make([]pgtype.Path, 0)
-	rows, err := s.db.GetRoutesByMapId(ctx, uuid.MustParse(id))
+	uuid := pgtype.UUID{}
+	uuid.Scan(id)
+	rows, err := s.db.GetRoutesByMapId(ctx, uuid)
 	if err != nil {
 		log.Println(err)
 		return nil, echo.NewHTTPError(http.StatusNotFound, "UUID not found")
@@ -94,9 +92,11 @@ func (s *Service) getImgUrl(ctx context.Context, id string) (db.Map, error) {
 
 func (s *Service) createNewZone(ctx context.Context, zone pgtype.Polygon, id uuid.UUID) (error) {
 	date := time.Now()
+	uuid := pgtype.UUID{}
+	uuid.Scan(id.String())
 	newZone, err := s.db.CreateZone(ctx, db.CreateZoneParams{
 		Zone: zone,
-		MapID: id,
+		MapID: uuid,
 		CreatedAt: date,
 	})
 	log.Println(newZone)

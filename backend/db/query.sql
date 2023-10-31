@@ -73,3 +73,11 @@ INSERT INTO
     map (name, image_url, created_at)
 VALUES
     ($1, $2, $3) RETURNING *;
+
+-- name: UpdateMap :exec
+UPDATE
+    map
+SET
+    name = $2, image_url = $3
+WHERE
+    id = $1;

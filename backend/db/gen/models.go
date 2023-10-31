@@ -22,12 +22,12 @@ type MapAnnotationsRoute struct {
 	ID        uuid.UUID   `json:"id"`
 	CreatedAt time.Time   `json:"created_at"`
 	Route     pgtype.Path `json:"route"`
-	MapID     uuid.UUID `json:"map_id"`
+	MapID     pgtype.UUID `json:"map_id"`
 }
 
 type MapAnnotationsZone struct {
 	ID        uuid.UUID      `json:"id"`
 	CreatedAt time.Time      `json:"created_at"`
 	Zone      pgtype.Polygon `json:"zone"`
-	MapID     uuid.UUID    `json:"map_id"`
+	MapID     pgtype.UUID    `json:"map_id"`
 }
