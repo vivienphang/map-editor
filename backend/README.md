@@ -1,4 +1,4 @@
-Endpoints:
+# Endpoints:
 GET - https://map-editor-be.onrender.com/maps
 Returns an array of all the maps in the db:
 [{id: string, 
@@ -48,4 +48,49 @@ EXAMPLE
 }
 *NOTE: To follow the zones fields exactly, INCLUDING the "Valid": true key-value pair
 
-
+## IMPORTANT
+# Structure of ZONE(polygon type) request object:
+"zones": [
+        {
+            "P": [
+                {
+                    "X": 1.234,
+                    "Y": 3.5667
+                },
+                {
+                    "X": 2.53453,
+                    "Y": 2.457547
+                },
+                {
+                    "X": 1.2324324,
+                    "Y": 1.25235
+                },
+                {
+                    "X": 2,
+                    "Y": 1
+                }
+            ],
+            "Valid": true
+        },
+        {
+            "P": [
+                {
+                    "X": 1.234,
+                    "Y": 3.5667
+                },
+                {
+                    "X": 2.53453,
+                    "Y": 2.457547
+                },
+                {
+                    "X": 1.2324324,
+                    "Y": 1.25235
+                },
+                {
+                    "X": 2,
+                    "Y": 1
+                }
+            ],
+            "Valid": true
+        }
+    ]
