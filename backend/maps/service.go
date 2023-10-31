@@ -66,8 +66,8 @@ func (s *Service) getZones(ctx context.Context, id string) ([]pgtype.Polygon, er
 	return zones, nil
 }
 
-func (s *Service) getPaths(ctx context.Context, id string) ([]pgtype.Path, error) {
-	paths := make([]pgtype.Path, 0)
+func (s *Service) getRoutes(ctx context.Context, id string) ([]pgtype.Path, error) {
+	routes := make([]pgtype.Path, 0)
 	rows, err := s.db.GetRoutesByMapId(ctx, uuid.MustParse(id))
 	if err != nil {
 		log.Println(err)
@@ -75,23 +75,20 @@ func (s *Service) getPaths(ctx context.Context, id string) ([]pgtype.Path, error
 	}
 
 	for _, row := range rows {
-		paths = append(paths, pgtype.Path{
+		routes = append(routes, pgtype.Path{
 			P: row.P,
 		})
 	}
-	return paths, nil
+	return routes, nil
 }
 
-func (s *Service) getImgUrl(ctx context.Context, id string) (pgtype.Text, error) {
-	var res pgtype.Text
+func (s *Service) getImgUrl(ctx context.Context, id string) (db.Map, error) {
 	uuid := uuid.MustParse(id)
-	row, err := s.db.GetMapById(ctx, uuid)
+	res, err := s.db.GetMapById(ctx, uuid)
 	if err != nil {
 		log.Println(err)
 		return res, echo.NewHTTPError(http.StatusInternalServerError, "Internal Server Error, please try again")
 	}
-
-	res = row.ImageUrl
 	return res, nil
 }
 

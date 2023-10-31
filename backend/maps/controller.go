@@ -38,21 +38,22 @@ func (con *Controller) getMapById(c echo.Context) error {
 		return c.JSON(http.StatusNotAcceptable, NewInvalidUUIDError())
 	}
 
-	paths, err := con.service.getPaths(ctx, id)
+	routes, err := con.service.getRoutes(ctx, id)
 	if err != nil {
 		log.Println(err)
 		return c.String(http.StatusInternalServerError, "Error fetching path")
 	}
 
-	imgUrl, err := con.service.getImgUrl(ctx, id)
+	mapInfo, err := con.service.getImgUrl(ctx, id)
 	if err != nil {
 		log.Println(err)
 		return c.JSON(http.StatusInternalServerError, "Error fetching image url")
 	}
 	res := make(map[string]interface{})
-	res["image_url"] = imgUrl
+	res["name"] = mapInfo.Name
+	res["image_url"] = mapInfo.ImageUrl
 	res["zones"] = zones
-	res["paths"] = paths
+	res["routes"] = routes
 	return c.JSON(http.StatusOK, res)
 }
 
