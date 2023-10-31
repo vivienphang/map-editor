@@ -74,10 +74,19 @@ INSERT INTO
 VALUES
     ($1, $2, $3) RETURNING *;
 
--- name: UpdateMap :exec
+-- name: UpdateMapById :exec
 UPDATE
     map
 SET
-    name = $2, image_url = $3
+    name = $2, image_url = $3, created_at = $4
 WHERE
     id = $1;
+
+-- name: UpdateZoneById :exec
+UPDATE
+    map_annotations_zones
+SET
+    zone = $2,
+    created_at = $3
+WHERE
+    map_id = $1;

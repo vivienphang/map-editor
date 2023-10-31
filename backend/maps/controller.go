@@ -25,6 +25,7 @@ func NewController(e *echo.Echo, service *Service) *Controller {
 	e.POST("/map", c.createMap)
 	e.GET("/maps", c.getMaps)
 	e.GET("/map/:id", c.getMapById)
+	e.PUT("/map/:id", c.updateMap)
 	
 	return c
 }
@@ -81,4 +82,20 @@ func (con *Controller) createMap(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "Error creating map")
 	}
 	return c.String(http.StatusOK, "Created new map successfully")
+}
+
+func (con *Controller) updateMap(c echo.Context) error {
+	ctx := c.Request().Context()
+	id := c.Param("id")
+	req := MapCreationReq{}
+	err := c.Bind(&req); if err != nil {
+    	return c.String(http.StatusBadRequest, "Bad Request Body format")
+  	}
+
+	err2 := con.service.updateMap(ctx, req, id)
+	if err2 != nil {
+		log.Println(err)
+		return c.String(http.StatusInternalServerError, "Error updating map")
+	}
+	return c.String(http.StatusOK, "Updated map successfully")
 }

@@ -3,9 +3,17 @@ module example.com/echo-backend
 go 1.21.1
 
 require (
+	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/google/uuid v1.4.0
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/labstack/echo/v4 v4.11.2
+)
+
+require (
+	github.com/hashicorp/errwrap v1.1.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	github.com/lib/pq v1.10.2 // indirect
+	go.uber.org/atomic v1.7.0 // indirect
 )
 
 require (

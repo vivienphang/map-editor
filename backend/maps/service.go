@@ -129,3 +129,44 @@ func (s *Service) createNewMap(ctx context.Context, req MapCreationReq) (error) 
 	}
 	return nil
 }
+
+func (s *Service) updateMap(ctx context.Context, req MapCreationReq, id string) (error) {
+	date := time.Now()
+	nameString := pgtype.Text{String: req.Name, Valid: true}
+	urlString := pgtype.Text{String: req.Image_url, Valid: true}
+	err := s.db.UpdateMapById(ctx, db.UpdateMapByIdParams{
+		Name: nameString,
+		ImageUrl: urlString,
+		CreatedAt: date,
+		ID: uuid.MustParse(id),
+	}) 
+	if err != nil {
+		log.Println(err)
+    	return echo.NewHTTPError(http.StatusInternalServerError, "Error updating map")
+  	}
+	
+	if (len(req.Zones) != 0) {
+		for _, zone := range req.Zones {
+			s.updateZone(ctx, zone, id)
+		}
+	}
+
+	return nil
+}
+
+func (s *Service) updateZone(ctx context.Context, zone pgtype.Polygon, id string) (error) {
+	date := time.Now()
+	uuid := pgtype.UUID{}
+	uuid.Scan(id)
+	err := s.db.UpdateZoneById(ctx, db.UpdateZoneByIdParams{
+		Zone: zone,
+		MapID: uuid,
+		CreatedAt: date,
+	})
+	if err != nil {
+		log.Println(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Internal Server Error, please try again")
+	}
+	
+	return nil
+}

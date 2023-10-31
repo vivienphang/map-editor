@@ -23,7 +23,8 @@ type Querier interface {
 	GetZoneById(ctx context.Context, id uuid.UUID) (pgtype.Polygon, error)
 	GetZones(ctx context.Context) ([]MapAnnotationsZone, error)
 	GetZonesByMapId(ctx context.Context, mapID pgtype.UUID) ([]pgtype.Polygon, error)
-	UpdateMap(ctx context.Context, arg UpdateMapParams) error
+	UpdateMapById(ctx context.Context, arg UpdateMapByIdParams) error
+	UpdateZoneById(ctx context.Context, arg UpdateZoneByIdParams) error
 }
 
 var _ Querier = (*Queries)(nil)
