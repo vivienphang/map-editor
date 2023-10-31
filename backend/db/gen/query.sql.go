@@ -88,6 +88,18 @@ func (q *Queries) CreateZone(ctx context.Context, arg CreateZoneParams) (MapAnno
 	return i, err
 }
 
+const deleteMapById = `-- name: DeleteMapById :exec
+DELETE FROM
+    map
+WHERE
+    id = $1
+`
+
+func (q *Queries) DeleteMapById(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteMapById, id)
+	return err
+}
+
 const getMapById = `-- name: GetMapById :one
 SELECT
     id, created_at, name, image_url

@@ -26,7 +26,7 @@ func NewController(e *echo.Echo, service *Service) *Controller {
 	e.GET("/maps", c.getMaps)
 	e.GET("/map/:id", c.getMapById)
 	e.PUT("/map/:id", c.updateMap)
-	
+	e.DELETE("/map/:id", c.deleteMap)
 	return c
 }
 
@@ -98,4 +98,16 @@ func (con *Controller) updateMap(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Error updating map")
 	}
 	return c.String(http.StatusOK, "Updated map successfully")
+}
+
+func (con *Controller) deleteMap(c echo.Context) error {
+	ctx := c.Request().Context()
+	id := c.Param("id")
+
+	err := con.service.deleteMap(ctx, id)
+	if err != nil {
+		log.Println(err)
+		return c.String(http.StatusInternalServerError, "Error deleting map")
+	}
+	return c.String(http.StatusOK, "Deleted map successfully")
 }

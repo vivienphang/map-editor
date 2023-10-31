@@ -34,7 +34,7 @@ func goDotEnvVariable(key string) string {
 }
 
 func injectDependencies(e *echo.Echo) {
-	dbConnectionString := goDotEnvVariable("REMOTE_DB")
+	dbConnectionString := goDotEnvVariable("LOCAL_DB")
 	// Connect to database
 	pool, err := pgxpool.New(context.Background(), dbConnectionString)
 	if err != nil {

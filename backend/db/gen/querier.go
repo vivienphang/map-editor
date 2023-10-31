@@ -15,6 +15,7 @@ type Querier interface {
 	CreateMap(ctx context.Context, arg CreateMapParams) (Map, error)
 	CreateRoute(ctx context.Context, arg CreateRouteParams) (MapAnnotationsRoute, error)
 	CreateZone(ctx context.Context, arg CreateZoneParams) (MapAnnotationsZone, error)
+	DeleteMapById(ctx context.Context, id uuid.UUID) error
 	GetMapById(ctx context.Context, id uuid.UUID) (Map, error)
 	GetMaps(ctx context.Context) ([]Map, error)
 	GetPaths(ctx context.Context) ([]MapAnnotationsRoute, error)

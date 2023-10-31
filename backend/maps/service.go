@@ -171,3 +171,15 @@ func (s *Service) updateZone(ctx context.Context, zone pgtype.Polygon, id string
 
 	return nil
 }
+func (s *Service) deleteMap(ctx context.Context, id string) (error) {
+	// s.deleteZone(ctx, id)
+	uuid := uuid.MustParse(id)
+	err := s.db.DeleteMapById(ctx, uuid)
+	log.Println(err)
+	if err != nil {
+		log.Println(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Internal Server Error, please try again")
+	}
+
+	return nil
+}

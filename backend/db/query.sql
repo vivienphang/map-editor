@@ -90,3 +90,9 @@ SET
     created_at = $3
 WHERE
     map_id = $1;
+
+-- name: DeleteMapById :exec
+DELETE FROM
+    map
+WHERE
+    id = $1;
