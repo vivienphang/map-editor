@@ -1,5 +1,6 @@
 import 'dart:convert';
-
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'dart:ui' as ui;
@@ -98,44 +99,50 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _saveImage(String fileName) async {
+    String base64String = '';
     RenderRepaintBoundary boundary =
         _repaintKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-    var image = await boundary.toImage();
-    var byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    var buffer = byteData!.buffer.asUint8List();
-
-    print('Image Captured');
+    var image = await boundary.toImage(pixelRatio: ui.window.devicePixelRatio);
+    //var image = await boundary.toImage();
+    ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    if (byteData != null) {
+      Uint8List pngBytes = byteData.buffer.asUint8List();
+      base64String = base64.encode(pngBytes); // Assign the base64 string
+      // Here you should do something with the base64String, e.g., save it or send it to a server
+    }
+    print('this is base64String: $base64String');
     // Create the object model using ImageData class
     ImageData data = ImageData(
       name: fileName,
-      imageUrl: "",
+      imageUrl: base64String,
       zones: [
         Zone(points: points.map((e) => Point(x: e!.dx, y: e.dy)).toList())
       ],
       routes: [], // Provide routes data if available
     );
 
-    print('DATA: ${data.toMap()}');
+    print('DATA: ${data.toJson()}');
 
     // PLACEHOLDER: Backend endpoint HTTP POST file
-    // final url = "https://map-editor-be.onrender.com/map";
-    //
-    // try {
-    //   final response = await http.post(
-    //     Uri.parse(url),
-    //     headers: {'Content-Type': 'application/json'},
-    //     body: json.encode(data),
-    //   );
-    //   print('this is response: $response');
-    //
-    //   if (response.statusCode == 200) {
-    //     print('Successfully uploaded data to the backend.');
-    //   } else {
-    //     print('Failed to upload data. Status code: ${response.statusCode}');
-    //   }
-    // } catch (error) {
-    //   print('Error uploading data: $error');
-    // }
+    const url = "https://map-editor-be.onrender.com/map";
+
+    try {
+      print('before http post...');
+      print(url);
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(data),
+      );
+
+      if (response.statusCode == 200) {
+        print('Successfully uploaded data to the backend.');
+      } else {
+        print('Failed to upload data. Status code: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error uploading data: $error');
+    }
   }
 
   @override

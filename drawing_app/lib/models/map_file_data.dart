@@ -13,11 +13,11 @@ class ImageData {
     required this.routes,
   });
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toJson() {
     return {
       'name': name,
       'image_url': imageUrl,
-      'zones': zones.map((zone) => zone.toMap()).toList(),
+      'zones': zones.map((zone) => zone.toJson()).toList(),
       'routes': routes,
     };
   }
@@ -29,9 +29,9 @@ class Zone {
 
   Zone({required this.points, this.valid = true});
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toJson() {
     return {
-      'points': points.map((point) => point.toMap()).toList(),
+      'P': points.map((point) => point.toJson()).toList(),
       'Valid': valid,
     };
   }
@@ -43,10 +43,10 @@ class Point {
 
   Point({required this.x, required this.y});
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toJson() {
     return {
-      'x': x,
-      'y': y,
+      'X': x,
+      'Y': y,
     };
   }
 }
