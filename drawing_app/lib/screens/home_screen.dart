@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -176,12 +177,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       barrierDismissible: false,
                       builder: (BuildContext context) {
                         return FutureBuilder<List<ImageData>>(
-                          future: fetchData(),
+                          future:
+                              fetchData(), // Your async data fetching operation
                           builder: (BuildContext context,
                               AsyncSnapshot<List<ImageData>> snapshot) {
                             if (snapshot.connectionState ==
                                 ConnectionState.waiting) {
-                              // if Future func is still running, show spinner
+                              // The future is still working, waiting for data, show the spinner
                               return const AlertDialog(
                                 content: Row(
                                   children: [
@@ -191,39 +193,52 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ],
                                 ),
                               );
-                            } else if (snapshot.hasError) {
-                              return AlertDialog(
-                                title: Text('Error'),
-                                content: SingleChildScrollView(
-                                  child: ListBody(
-                                    children: <Widget>[
-                                      Text('Error: ${snapshot.error}'),
-                                    ],
-                                  ),
-                                ),
-                                actions: <Widget>[
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.of(context)
-                                          .pop(); // Dismiss dialog
+                            } else if (snapshot.connectionState ==
+                                ConnectionState.done) {
+                              if (snapshot.hasData) {
+                                WidgetsBinding.instance
+                                    .addPostFrameCallback((_) {
+                                  Navigator.of(context)
+                                      .pushReplacement(MaterialPageRoute(
+                                    builder: (context) =>
+                                        ViewAllMapsScreen(maps: snapshot.data!),
+                                  ));
+                                });
+                                return Container(); // or return SizedBox.shrink();
+                              } else if (snapshot.hasError) {
+                                Future.delayed(Duration.zero, () {
+                                  showDialog(
+                                    context: context,
+                                    barrierDismissible:
+                                        false, // User must not dismiss the dialog manually
+                                    builder: (BuildContext context) {
+                                      // Using a Timer to close the dialog after 3 seconds
+                                      Timer(const Duration(seconds: 3), () {
+                                        Navigator.of(context)
+                                            .pop(); // Dismiss the dialog automatically
+                                      });
+
+                                      return const AlertDialog(
+                                        title: Text('Error'),
+                                        content: Text(
+                                            'Error getting maps. Please try again later.'),
+                                      );
                                     },
-                                    child: Text('Okay'),
-                                  ),
-                                ],
-                              );
-                            } else if (snapshot.hasData) {
-                              Navigator.pop(context); // close dialog
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      ViewAllMapsScreen(maps: snapshot.data!),
-                                ),
-                              );
-                              return Container();
-                            } else {
-                              return Container();
+                                  );
+                                });
+                                return Container();
+                              }
                             }
+                            // By default, show a loading spinner while the future is still pending
+                            return const AlertDialog(
+                              content: Row(
+                                children: [
+                                  CircularProgressIndicator(),
+                                  SizedBox(width: 10),
+                                  Text("Loading..."),
+                                ],
+                              ),
+                            );
                           },
                         );
                       });

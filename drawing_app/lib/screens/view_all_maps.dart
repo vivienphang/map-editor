@@ -59,7 +59,7 @@ class ViewAllMapsScreen extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(8),
               color: Colors.black54,
-              child: Text(
+              child: const Text(
                 'Tap to view details',
                 style: TextStyle(color: Colors.white),
                 textAlign: TextAlign.center,
