@@ -30,7 +30,7 @@ func (s *Service) getMaps(ctx context.Context) ([]db.Map, error) {
 	rows, err := s.db.GetMaps(ctx)
 	if err != nil {
 		log.Println(err)
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "Internal Server Error, please try again")
+		return []db.Map{}, InternalServerError()
 	}
 
 	for _, row := range rows {
@@ -44,14 +44,17 @@ func (s *Service) getMaps(ctx context.Context) ([]db.Map, error) {
 	return maps, nil
 }
 
-func (s *Service) getZones(ctx context.Context, id string) ([]pgtype.Polygon, error) {
+func (s *Service) getZonesByMapId(ctx context.Context, id string) ([]pgtype.Polygon, error) {
 	zones := make([]pgtype.Polygon, 0)
 	uuid := pgtype.UUID{}
-	uuid.Scan(id)
+	if err := uuid.Scan(id); err != nil {
+		log.Println(err)
+		return []pgtype.Polygon{}, InvalidUUIDError()
+	}
 	rows, err := s.db.GetZonesByMapId(ctx, uuid)
 	if err != nil {
 		log.Println(err)
-		return nil, echo.NewHTTPError(http.StatusNotFound, "UUID not found")
+		return []pgtype.Polygon{}, NotFoundError()
 	}
 
 	for _, row := range rows {
@@ -59,18 +62,21 @@ func (s *Service) getZones(ctx context.Context, id string) ([]pgtype.Polygon, er
 			P: row.P,
 		})
 	}
-	log.Println(zones)
 	return zones, nil
 }
 
-func (s *Service) getRoutes(ctx context.Context, id string) ([]pgtype.Path, error) {
+func (s *Service) getRoutesByMapId(ctx context.Context, id string) ([]pgtype.Path, error) {
 	routes := make([]pgtype.Path, 0)
 	uuid := pgtype.UUID{}
-	uuid.Scan(id)
+	if err := uuid.Scan(id); err != nil {
+		log.Println(err)
+		return []pgtype.Path{}, InvalidUUIDError()
+	}
+
 	rows, err := s.db.GetRoutesByMapId(ctx, uuid)
 	if err != nil {
 		log.Println(err)
-		return nil, echo.NewHTTPError(http.StatusNotFound, "UUID not found")
+		return []pgtype.Path{}, NotFoundError()
 	}
 
 	for _, row := range rows {
@@ -81,12 +87,16 @@ func (s *Service) getRoutes(ctx context.Context, id string) ([]pgtype.Path, erro
 	return routes, nil
 }
 
-func (s *Service) getImgUrl(ctx context.Context, id string) (db.Map, error) {
-	uuid := uuid.MustParse(id)
+func (s *Service) getMapById(ctx context.Context, id string) (db.Map, error) {
+	uuid, err := uuid.Parse(id) 
+	if err != nil {
+		log.Println(err)
+		return db.Map{}, InvalidUUIDError()
+	}
 	res, err := s.db.GetMapById(ctx, uuid)
 	if err != nil {
 		log.Println(err)
-		return res, echo.NewHTTPError(http.StatusInternalServerError, "Internal Server Error, please try again")
+		return db.Map{}, NotFoundError()
 	}
 	return res, nil
 }
@@ -120,7 +130,7 @@ func (s *Service) createNewMap(ctx context.Context, req MapCreationReq) (error) 
 	}) 
 	if err != nil {
 		log.Println(err)
-    	return echo.NewHTTPError(http.StatusInternalServerError, "Error creating new map")
+    	return MapCreationError()
   	}
 	
 	if (len(req.Zones) != 0) {
@@ -132,18 +142,22 @@ func (s *Service) createNewMap(ctx context.Context, req MapCreationReq) (error) 
 }
 
 func (s *Service) updateMap(ctx context.Context, req MapCreationReq, id string) (error) {
+	name := pgtype.Text{String: req.Name, Valid: true}
+	imgUrl := pgtype.Text{String: req.Image_url, Valid: true}
 	date := time.Now()
-	nameString := pgtype.Text{String: req.Name, Valid: true}
-	urlString := pgtype.Text{String: req.Image_url, Valid: true}
-	err := s.db.UpdateMapById(ctx, db.UpdateMapByIdParams{
-		Name: nameString,
-		ImageUrl: urlString,
-		CreatedAt: date,
-		ID: uuid.MustParse(id),
-	}) 
+	uuid, err := uuid.Parse(id)
 	if err != nil {
 		log.Println(err)
-    	return echo.NewHTTPError(http.StatusInternalServerError, "Error updating map")
+		return InvalidUUIDError()
+	}
+	if err := s.db.UpdateMapById(ctx, db.UpdateMapByIdParams{
+		Name: name,
+		ImageUrl: imgUrl,
+		CreatedAt: date,
+		ID: uuid,
+	}); err != nil {
+		log.Println(err)
+    	return MapUpdateError()
   	}
 	
 	if (len(req.Zones) != 0) {
@@ -173,12 +187,14 @@ func (s *Service) updateZone(ctx context.Context, zone pgtype.Polygon, id string
 }
 func (s *Service) deleteMap(ctx context.Context, id string) (error) {
 	// s.deleteZone(ctx, id)
-	uuid := uuid.MustParse(id)
-	err := s.db.DeleteMapById(ctx, uuid)
-	log.Println(err)
+	uuid, err := uuid.Parse(id)
 	if err != nil {
 		log.Println(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Internal Server Error, please try again")
+		return InvalidUUIDError()
+	}
+	if err := s.db.DeleteMapById(ctx, uuid); err != nil {
+		log.Println(err)
+		return MapDeletionError()
 	}
 
 	return nil

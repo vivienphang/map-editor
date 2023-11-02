@@ -1,7 +1,6 @@
 package maps
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -33,22 +32,17 @@ func NewController(e *echo.Echo, service *Service) *Controller {
 func (con *Controller) getMapById(c echo.Context) error {
 	ctx := c.Request().Context()
 	id := c.Param("id")
-	zones, err := con.service.getZones(ctx, id)
+	zones, err := con.service.getZonesByMapId(ctx, id)
 	if err != nil {
-		log.Println(err)
-		return c.JSON(http.StatusNotAcceptable, NewInvalidUUIDError())
+		return c.JSON(http.StatusInternalServerError, err)
 	}
-
-	routes, err := con.service.getRoutes(ctx, id)
+	routes, err := con.service.getRoutesByMapId(ctx, id)
 	if err != nil {
-		log.Println(err)
-		return c.String(http.StatusInternalServerError, "Error fetching path")
+		return c.JSON(http.StatusInternalServerError, err)
 	}
-
-	mapInfo, err := con.service.getImgUrl(ctx, id)
+	mapInfo, err := con.service.getMapById(ctx, id)
 	if err != nil {
-		log.Println(err)
-		return c.JSON(http.StatusInternalServerError, "Error fetching image url")
+		return c.JSON(http.StatusInternalServerError, err)
 	}
 	res := make(map[string]interface{})
 	res["name"] = mapInfo.Name
@@ -62,8 +56,7 @@ func (con *Controller) getMaps(c echo.Context) error {
 	ctx := c.Request().Context()
 	maps, err := con.service.getMaps(ctx)
 	if err != nil {
-		log.Println(err)
-		return c.JSON(http.StatusInternalServerError, "Error fetching zone")
+		return c.JSON(http.StatusInternalServerError, err)
 	}
 	return c.JSON(http.StatusOK, maps)
 }
@@ -72,14 +65,12 @@ func (con *Controller) createMap(c echo.Context) error {
 	ctx := c.Request().Context()
 	req := MapCreationReq{}
 	
-	err := c.Bind(&req); if err != nil {
-    	return c.String(http.StatusBadRequest, "Bad Request Body format")
+	if err := c.Bind(&req); err != nil {
+    	return c.JSON(http.StatusBadRequest, BadRequestError())
   	}
 
-	err2 := con.service.createNewMap(ctx, req)
-	if err2 != nil {
-		log.Println(err)
-		return c.JSON(http.StatusInternalServerError, "Error creating map")
+	if err := con.service.createNewMap(ctx, req); err != nil {
+		return c.JSON(http.StatusInternalServerError, err)
 	}
 	return c.String(http.StatusOK, "Created new map successfully")
 }
@@ -88,14 +79,12 @@ func (con *Controller) updateMap(c echo.Context) error {
 	ctx := c.Request().Context()
 	id := c.Param("id")
 	req := MapCreationReq{}
-	err := c.Bind(&req); if err != nil {
-    	return c.String(http.StatusBadRequest, "Bad Request Body format")
+	if err := c.Bind(&req); err != nil {
+    	return c.JSON(http.StatusBadRequest, BadRequestError())
   	}
 
-	err2 := con.service.updateMap(ctx, req, id)
-	if err2 != nil {
-		log.Println(err)
-		return c.String(http.StatusInternalServerError, "Error updating map")
+	if err := con.service.updateMap(ctx, req, id); err != nil {
+		return c.JSON(http.StatusInternalServerError, err)
 	}
 	return c.String(http.StatusOK, "Updated map successfully")
 }
@@ -104,10 +93,8 @@ func (con *Controller) deleteMap(c echo.Context) error {
 	ctx := c.Request().Context()
 	id := c.Param("id")
 
-	err := con.service.deleteMap(ctx, id)
-	if err != nil {
-		log.Println(err)
-		return c.String(http.StatusInternalServerError, "Error deleting map")
+	if err := con.service.deleteMap(ctx, id); err != nil {
+		return c.JSON(http.StatusInternalServerError, err)
 	}
 	return c.String(http.StatusOK, "Deleted map successfully")
 }
