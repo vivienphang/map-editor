@@ -53,6 +53,9 @@ EXAMPLE
 ```
 *NOTE: To follow the zones fields exactly, INCLUDING the "Valid": true key-value pair
 
+PUT - https://map-editor-be.onrender.com/map/:id
+To provide request body similar to creation of new map but with updated values
+
 ## IMPORTANT
 # Structure of ZONE(polygon type) request object:
 ```

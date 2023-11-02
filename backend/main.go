@@ -54,9 +54,14 @@ func injectDependencies(e *echo.Echo) {
 		"file://db/migration",
 		dbConnectionString)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+	}
+	if err := m.Force(1); err != nil {
+		log.Println(err)
 	}
 	if err := m.Up(); err != nil {
 		log.Println(err)
 	}
+	
+
 }
