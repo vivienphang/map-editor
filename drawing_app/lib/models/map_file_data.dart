@@ -1,23 +1,25 @@
+import 'dart:convert';
+
 export 'map_file_data.dart';
 
 class ImageData {
   final String name;
   final String imageUrl;
-  final List<Zone> zones;
-  final List<dynamic> routes; // placeholder
+  final List<Zone>? zones;
+  final List<dynamic>? routes; // placeholder
 
   ImageData({
     required this.name,
     required this.imageUrl,
-    required this.zones,
-    required this.routes,
+    this.zones,
+    this.routes,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'name': name,
       'image_url': imageUrl,
-      'zones': zones.map((zone) => zone.toJson()).toList(),
+      'zones': zones?.map((zone) => zone.toJson()).toList(),
       'routes': routes,
     };
   }
@@ -26,11 +28,18 @@ class ImageData {
     return ImageData(
       name: json['name'],
       imageUrl: json['image_url'],
-      zones: (json['zones'] as List)
-          .map((zoneJson) => Zone.fromJson(zoneJson))
-          .toList(),
+      zones: json['zones'] != null
+          ? (json['zones'] as List)
+              .map((zoneJson) => Zone.fromJson(zoneJson))
+              .toList()
+          : null,
       routes: json['routes'], // Assuming 'routes' is directly usable
     );
+  }
+  // This will use the toJson method to create a string representation
+  @override
+  String toString() {
+    return json.encode(toJson());
   }
 }
 
