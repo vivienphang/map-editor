@@ -1,23 +1,27 @@
 # Endpoints:
 GET - https://map-editor-be.onrender.com/maps
 Returns an array of all the maps in the db:
+```
 [{id: string, 
   created_at: string,
   name: string,
   image_url: string},
   ...]
-
+```
 GET - https://map-editor-be.onrender.com/map/:id
 Returns an array of all the maps in the db:
+```
 {  image_url: string,
   name: string,
   zones: [coordinates],
   routes: [coordinates],
 }
+```
 
 POST - https://map-editor-be.onrender.com/map
 To provide a request body of the following format:
 EXAMPLE
+```
 { 
     "name": "test map",
     "image_url": ""
@@ -46,10 +50,12 @@ EXAMPLE
     ],
     "routes": []
 }
+```
 *NOTE: To follow the zones fields exactly, INCLUDING the "Valid": true key-value pair
 
 ## IMPORTANT
 # Structure of ZONE(polygon type) request object:
+```
 "zones": [
         {
             "P": [
@@ -94,3 +100,4 @@ EXAMPLE
             "Valid": true
         }
     ]
+    ```

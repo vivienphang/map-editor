@@ -7,16 +7,18 @@ import (
 
 	db "example.com/echo-backend/db/gen"
 	"example.com/echo-backend/maps"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/joho/godotenv"
-	"github.com/labstack/echo/v4"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
 	e := echo.New()
+	e.Use(middleware.CORS())
 	injectDependencies(e)
 	log.Println("Server is running on PORT 1323")
     e.Logger.Fatal(e.Start(":1323"))
