@@ -56,8 +56,12 @@ func injectDependencies(e *echo.Echo) {
 	if err != nil {
 		log.Println(err)
 	}
+	if err := m.Force(1); err != nil {
+		log.Println(err)
+	}
 	if err := m.Up(); err != nil {
 		log.Println(err)
 	}
+	
 
 }

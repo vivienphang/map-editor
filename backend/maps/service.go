@@ -102,7 +102,7 @@ func (s *Service) getMapById(ctx context.Context, id string) (db.Map, error) {
 }
 
 func (s *Service) createNewZone(ctx context.Context, zone pgtype.Polygon, id uuid.UUID) (error) {
-	date := time.Now()
+	date := time.Now().Local()
 	uuid := pgtype.UUID{}
 	uuid.Scan(id.String())
 	newZone, err := s.db.CreateZone(ctx, db.CreateZoneParams{
@@ -120,7 +120,7 @@ func (s *Service) createNewZone(ctx context.Context, zone pgtype.Polygon, id uui
 }
 
 func (s *Service) createNewMap(ctx context.Context, req MapCreationReq) (error) {
-	date := time.Now()
+	date := time.Now().Local()
 	nameString := pgtype.Text{String: req.Name, Valid: true}
 	urlString := pgtype.Text{String: req.Image_url, Valid: true}
 	createdMap, err := s.db.CreateMap(ctx, db.CreateMapParams{
@@ -144,7 +144,7 @@ func (s *Service) createNewMap(ctx context.Context, req MapCreationReq) (error) 
 func (s *Service) updateMap(ctx context.Context, req MapCreationReq, id string) (error) {
 	name := pgtype.Text{String: req.Name, Valid: true}
 	imgUrl := pgtype.Text{String: req.Image_url, Valid: true}
-	date := time.Now()
+	date := time.Now().Local()
 	uuid, err := uuid.Parse(id)
 	if err != nil {
 		log.Println(err)
@@ -170,7 +170,7 @@ func (s *Service) updateMap(ctx context.Context, req MapCreationReq, id string) 
 }
 
 func (s *Service) updateZone(ctx context.Context, zone pgtype.Polygon, id string) (error) {
-	date := time.Now()
+	date := time.Now().Local()
 	uuid := pgtype.UUID{}
 	uuid.Scan(id)
 	err := s.db.UpdateZoneById(ctx, db.UpdateZoneByIdParams{
