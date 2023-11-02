@@ -1,25 +1,45 @@
+import 'dart:convert';
+
 export 'map_file_data.dart';
 
 class ImageData {
   final String name;
   final String imageUrl;
-  final List<Zone> zones;
-  final List<dynamic> routes; // placeholder
+  final List<Zone>? zones;
+  final List<dynamic>? routes; // placeholder
 
   ImageData({
     required this.name,
     required this.imageUrl,
-    required this.zones,
-    required this.routes,
+    this.zones,
+    this.routes,
   });
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toJson() {
     return {
       'name': name,
       'image_url': imageUrl,
-      'zones': zones.map((zone) => zone.toMap()).toList(),
+      'zones': zones?.map((zone) => zone.toJson()).toList(),
       'routes': routes,
     };
+  }
+
+  factory ImageData.fromJson(Map<String, dynamic> json) {
+    return ImageData(
+      name: json['name'],
+      imageUrl: json['image_url'],
+      zones: json['zones'] != null
+          ? (json['zones'] as List)
+              .map((zoneJson) => Zone.fromJson(zoneJson))
+              .toList()
+          : null,
+      routes: json['routes'], // Assuming 'routes' is directly usable
+    );
+  }
+  // This will use the toJson method to create a string representation
+  @override
+  String toString() {
+    return json.encode(toJson());
   }
 }
 
@@ -29,11 +49,20 @@ class Zone {
 
   Zone({required this.points, this.valid = true});
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toJson() {
     return {
-      'points': points.map((point) => point.toMap()).toList(),
+      'P': points.map((point) => point.toJson()).toList(),
       'Valid': valid,
     };
+  }
+
+  factory Zone.fromJson(Map<String, dynamic> json) {
+    return Zone(
+      points: (json['P'] as List)
+          .map((pointJson) => Point.fromJson(pointJson))
+          .toList(),
+      valid: json['Valid'] ?? true,
+    );
   }
 }
 
@@ -43,10 +72,19 @@ class Point {
 
   Point({required this.x, required this.y});
 
-  Map<String, dynamic> toMap() {
+  // toJson converts Dart object into JSON
+  Map<String, dynamic> toJson() {
     return {
-      'x': x,
-      'y': y,
+      'X': x,
+      'Y': y,
     };
+  }
+
+  // fromJson creates instance of the class from JSON
+  factory Point.fromJson(Map<String, dynamic> json) {
+    return Point(
+      x: json['X'].toDouble(),
+      y: json['Y'].toDouble(),
+    );
   }
 }

@@ -13,7 +13,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Image Editor',
+      title: 'Map Editor',
       theme: ThemeData.light(),
       home: const HomeScreen(),
     );

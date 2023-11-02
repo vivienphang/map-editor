@@ -1,5 +1,7 @@
 import 'dart:convert';
-
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:drawing_app/screens/view_all_maps.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'dart:ui' as ui;
@@ -16,6 +18,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey _repaintKey = GlobalKey();
   List<Offset?> points = [];
+  List<ImageData> maps = [];
   double screenWidth = 0.0;
   double screenHeight = 0.0;
 
@@ -50,6 +53,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     points = [];
+    fetchData().then((fetchedMaps) {
+      setState(() {
+        maps = fetchedMaps;
+      });
+    });
   }
 
   Future<void> _showSaveDialog() async {
@@ -98,44 +106,44 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _saveImage(String fileName) async {
+    String base64String = '';
     RenderRepaintBoundary boundary =
         _repaintKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-    var image = await boundary.toImage();
-    var byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    var buffer = byteData!.buffer.asUint8List();
-
-    print('Image Captured');
+    var image = await boundary.toImage(pixelRatio: ui.window.devicePixelRatio);
+    //var image = await boundary.toImage();
+    ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    if (byteData != null) {
+      Uint8List pngBytes = byteData.buffer.asUint8List();
+      base64String = base64.encode(pngBytes); // Assign the base64 string
+      // Here you should do something with the base64String, e.g., save it or send it to a server
+    }
     // Create the object model using ImageData class
     ImageData data = ImageData(
       name: fileName,
-      imageUrl: "",
+      imageUrl: base64String,
       zones: [
         Zone(points: points.map((e) => Point(x: e!.dx, y: e.dy)).toList())
       ],
       routes: [], // Provide routes data if available
     );
+    const url = "https://map-editor-be.onrender.com/map";
+    try {
+      print('before http post...');
+      print(url);
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(data),
+      );
 
-    print('DATA: ${data.toMap()}');
-
-    // PLACEHOLDER: Backend endpoint HTTP POST file
-    // final url = "https://map-editor-be.onrender.com/map";
-    //
-    // try {
-    //   final response = await http.post(
-    //     Uri.parse(url),
-    //     headers: {'Content-Type': 'application/json'},
-    //     body: json.encode(data),
-    //   );
-    //   print('this is response: $response');
-    //
-    //   if (response.statusCode == 200) {
-    //     print('Successfully uploaded data to the backend.');
-    //   } else {
-    //     print('Failed to upload data. Status code: ${response.statusCode}');
-    //   }
-    // } catch (error) {
-    //   print('Error uploading data: $error');
-    // }
+      if (response.statusCode == 200) {
+        print('Successfully uploaded data to the backend.');
+      } else {
+        print('Failed to upload data. Status code: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error uploading data: $error');
+    }
   }
 
   @override
@@ -160,27 +168,73 @@ class _HomeScreenState extends State<HomeScreen> {
         appBar: AppBar(
           title: const Text('Image Editor'),
           actions: [
-            IconButton(
-              icon: Icon(Icons.zoom_in),
-              onPressed: () {
-                setState(() {
-                  _currentScale += 0.1; // zoom in by increasing scale factor
-                  _transformationMatrix = Matrix4.identity()
-                    ..translate(_currentOffset.dx, _currentOffset.dy)
-                    ..scale(_currentScale);
-                });
+            PopupMenuButton<String>(
+              onSelected: (String result) async {
+                if (result == 'view_all_maps') {
+                  showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (BuildContext context) {
+                        return FutureBuilder<List<ImageData>>(
+                          future: fetchData(),
+                          builder: (BuildContext context,
+                              AsyncSnapshot<List<ImageData>> snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              // if Future func is still running, show spinner
+                              return const AlertDialog(
+                                content: Row(
+                                  children: [
+                                    CircularProgressIndicator(),
+                                    SizedBox(width: 10),
+                                    Text("Loading..."),
+                                  ],
+                                ),
+                              );
+                            } else if (snapshot.hasError) {
+                              return AlertDialog(
+                                title: Text('Error'),
+                                content: SingleChildScrollView(
+                                  child: ListBody(
+                                    children: <Widget>[
+                                      Text('Error: ${snapshot.error}'),
+                                    ],
+                                  ),
+                                ),
+                                actions: <Widget>[
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context)
+                                          .pop(); // Dismiss dialog
+                                    },
+                                    child: Text('Okay'),
+                                  ),
+                                ],
+                              );
+                            } else if (snapshot.hasData) {
+                              Navigator.pop(context); // close dialog
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ViewAllMapsScreen(maps: snapshot.data!),
+                                ),
+                              );
+                              return Container();
+                            } else {
+                              return Container();
+                            }
+                          },
+                        );
+                      });
+                }
               },
-            ),
-            IconButton(
-              icon: Icon(Icons.zoom_out),
-              onPressed: () {
-                setState(() {
-                  _currentScale -= 0.1; // zoom out by decreasing scale factor
-                  _transformationMatrix = Matrix4.identity()
-                    ..translate(_currentOffset.dx, _currentOffset.dy)
-                    ..scale(_currentScale);
-                });
-              },
+              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                const PopupMenuItem<String>(
+                  value: 'view_all_maps',
+                  child: Text('View All Maps'),
+                ),
+              ],
             ),
           ],
         ),
@@ -235,30 +289,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       onPanEnd: (details) {
                         selectedPoint = null; // Clear the reference
                       },
-                      // onScaleStart: (ScaleStartDetails details) {
-                      //   // Store the starting scale and position when the scaling gesture begins
-                      //   _currentScale = _transformationMatrix.getMaxScaleOnAxis();
-                      //   _currentOffset = details.focalPoint;
-                      // },
-                      // onScaleUpdate: (ScaleUpdateDetails details) {
-                      //   setState(() {
-                      //     // Calculate the desired scale. Clamp ensures that the value remains between the given limits
-                      //     _currentScale = (_currentScale * details.scale).clamp(1.0, 5.0);
-                      //
-                      //     // Update the transformation matrix for scale
-                      //     _transformationMatrix = Matrix4.identity()
-                      //       ..translate(
-                      //           details.focalPoint.dx - _currentOffset.dx,
-                      //           details.focalPoint.dy - _currentOffset.dy)
-                      //       ..scale(_currentScale, _currentScale)
-                      //       ..translate(
-                      //           -details.focalPoint.dx + _currentOffset.dx,
-                      //           -details.focalPoint.dy + _currentOffset.dy);
-                      //
-                      //     // Reset the current offset to the focal point for continuous scaling
-                      //     _currentOffset = details.focalPoint;
-                      //   });
-                      // },
                       child: Container(
                         decoration: BoxDecoration(
                             border: Border.all(color: Colors.black, width: 1)),
@@ -298,6 +328,37 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     });
+  }
+}
+
+Future<List<ImageData>> fetchData() async {
+  const String url = 'https://map-editor-be.onrender.com/maps';
+
+  try {
+    print('fetching data...');
+    final response = await http.get(Uri.parse(url));
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      List<dynamic> mapsJson = json.decode(response.body);
+      List<ImageData> maps =
+          mapsJson.map((json) => ImageData.fromJson(json)).toList();
+      // This will print the JSON string representation of each ImageData instance in the list.
+      for (var map in maps) {
+        print(map
+            .toString()); // Since toString is overridden, it prints JSON string
+      }
+      return maps;
+    } else {
+      // If the server did not return a 200 OK response,
+      // then throw an exception.
+      throw Exception('Failed to load maps');
+    }
+  } catch (exception) {
+    // Handle any exceptions here
+    print(exception);
+    throw Exception('Failed to load maps');
   }
 }
 
