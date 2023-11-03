@@ -8,6 +8,7 @@ import 'package:flutter/rendering.dart';
 import 'dart:ui' as ui;
 import 'package:http/http.dart' as http;
 import '../models/map_file_data.dart';
+import '../utils/polygon_painter.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -20,14 +21,16 @@ class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey _repaintKey = GlobalKey();
   List<Offset?> points = [];
   List<ImageData> maps = [];
-  double screenWidth = 0.0;
-  double screenHeight = 0.0;
+
+  // Fixed canvas dimensions
+  static const double canvasWidth = 800.0;
+  static const double canvasHeight = 600.0;
 
   // Define scale value for zoom level
   double _currentScale = 1.0;
   Offset _currentOffset = Offset.zero; // Focal point where user starts scaling
   // Keeping track of scale and translation transformations.
-  Matrix4 _transformationMatrix = Matrix4.identity();
+  final Matrix4 _transformationMatrix = Matrix4.identity();
 
   // selectedPoint: to keep track of the currently dragged point
   Offset? selectedPoint;
@@ -68,17 +71,17 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text("Save Image"),
+          title: const Text("Save Image"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text("Enter image details:"),
-              SizedBox(height: 10),
+              const Text("Enter image details:"),
+              const SizedBox(height: 10),
               TextField(
                 onChanged: (value) {
                   fileName = value; // updating fileName on each change
                 },
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: "Save file name",
                   border: OutlineInputBorder(),
                 ),
@@ -87,15 +90,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           actions: [
             TextButton(
-              child: Text("Cancel"),
+              child: const Text("Cancel"),
               onPressed: () => Navigator.of(context).pop(),
             ),
             TextButton(
-              child: Text("Save Image"),
+              child: const Text("Save Image"),
               onPressed: () {
                 // Handle the save image logic here
                 if (fileName != null && fileName!.isNotEmpty) {
-                  _saveImage(fileName!);
+                  _saveImage(context, fileName!);
                 }
                 Navigator.of(context).pop();
               },
@@ -106,17 +109,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _saveImage(String fileName) async {
+  Future<void> _saveImage(BuildContext context, String fileName) async {
     String base64String = '';
     RenderRepaintBoundary boundary =
         _repaintKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-    var image = await boundary.toImage(pixelRatio: ui.window.devicePixelRatio);
-    //var image = await boundary.toImage();
+    //var image = await boundary.toImage(pixelRatio: ui.window.devicePixelRatio);
+    var image = await boundary.toImage(pixelRatio: 1.0);
     ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     if (byteData != null) {
       Uint8List pngBytes = byteData.buffer.asUint8List();
-      base64String = base64.encode(pngBytes); // Assign the base64 string
-      // Here you should do something with the base64String, e.g., save it or send it to a server
+      base64String = base64.encode(pngBytes); // assigning base64 string
     }
     // Create the object model using ImageData class
     ImageData data = ImageData(
@@ -125,12 +127,9 @@ class _HomeScreenState extends State<HomeScreen> {
       zones: [
         Zone(points: points.map((e) => Point(x: e!.dx, y: e.dy)).toList())
       ],
-      routes: [], // Provide routes data if available
     );
     const url = "https://map-editor-be.onrender.com/map";
     try {
-      print('before http post...');
-      print(url);
       final response = await http.post(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
@@ -139,6 +138,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (response.statusCode == 200) {
         print('Successfully uploaded data to the backend.');
+        var responseData = json.decode(response.body);
+        var mapId = responseData['id'];
+        data = ImageData(id: mapId, name: data.name, imageUrl: data.imageUrl);
       } else {
         print('Failed to upload data. Status code: ${response.statusCode}');
       }
@@ -151,19 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-      double oldScreenWidth =
-          screenWidth != 0.0 ? screenWidth : constraints.maxWidth * 0.8;
-      double oldScreenHeight =
-          screenHeight != 0.0 ? screenHeight : constraints.maxHeight * 0.6;
-
-      screenWidth = constraints.maxWidth * 0.8;
-      screenHeight = constraints.maxHeight * 0.6;
-
-      // Check if screen size has changed
-      if (oldScreenWidth != screenWidth || oldScreenHeight != screenHeight) {
-        rescalePoints(
-            oldScreenWidth, oldScreenHeight, screenWidth, screenHeight);
-      }
+      Size canvasSize = const Size(canvasWidth, canvasHeight);
 
       return Scaffold(
         appBar: AppBar(
@@ -204,18 +194,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ViewAllMapsScreen(maps: snapshot.data!),
                                   ));
                                 });
-                                return Container(); // or return SizedBox.shrink();
+                                return Container();
                               } else if (snapshot.hasError) {
                                 Future.delayed(Duration.zero, () {
                                   showDialog(
                                     context: context,
-                                    barrierDismissible:
-                                        false, // User must not dismiss the dialog manually
+                                    barrierDismissible: false,
                                     builder: (BuildContext context) {
-                                      // Using a Timer to close the dialog after 3 seconds
                                       Timer(const Duration(seconds: 3), () {
-                                        Navigator.of(context)
-                                            .pop(); // Dismiss the dialog automatically
+                                        Navigator.of(context).pop();
                                       });
 
                                       return const AlertDialog(
@@ -260,9 +247,9 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Transform(
                 transform: _transformationMatrix,
                 child: Container(
-                  constraints: BoxConstraints(
-                    maxWidth: screenWidth,
-                    maxHeight: screenHeight,
+                  constraints: const BoxConstraints(
+                    maxWidth: canvasWidth,
+                    maxHeight: canvasHeight,
                   ),
                   child: Builder(
                     builder: (context) => GestureDetector(
@@ -285,8 +272,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (selectedPoint != null) {
                           // Clamp the position within the bounds
                           Offset newPosition = Offset(
-                            details.localPosition.dx.clamp(0, screenWidth),
-                            details.localPosition.dy.clamp(0, screenHeight),
+                            details.localPosition.dx.clamp(0, canvasWidth),
+                            details.localPosition.dy.clamp(0, canvasHeight),
                           );
                           setState(() {
                             // look for selectedPoint in points list, if not found, it will return -1
@@ -308,7 +295,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         decoration: BoxDecoration(
                             border: Border.all(color: Colors.black, width: 1)),
                         child: CustomPaint(
-                          painter: PolygonPainter(points),
+                          painter: PolygonPainter(
+                            points: points,
+                            screenSize: canvasSize,
+                            transformationMatrix: Matrix4.identity(),
+                          ),
                           child: Container(),
                         ),
                       ),
@@ -353,7 +344,6 @@ Future<List<ImageData>> fetchData() async {
     print('fetching data...');
     final response = await http.get(Uri.parse(url));
     print('Response status: ${response.statusCode}');
-    print('Response body: ${response.body}');
 
     if (response.statusCode == 200) {
       List<dynamic> mapsJson = json.decode(response.body);
@@ -366,88 +356,9 @@ Future<List<ImageData>> fetchData() async {
       }
       return maps;
     } else {
-      // If the server did not return a 200 OK response,
-      // then throw an exception.
       throw Exception('Failed to load maps');
     }
   } catch (exception) {
-    // Handle any exceptions here
-    print(exception);
     throw Exception('Failed to load maps');
-  }
-}
-
-class PolygonPainter extends CustomPainter {
-  final List<Offset?> points;
-
-  PolygonPainter(this.points);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (points.isEmpty) return;
-
-    final linePaint = Paint()
-      ..color = Colors.red
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 5.0;
-
-    final double squareSize = 10.0;
-
-    final borderPaint = Paint()
-      ..color = Colors.blue // Color of the border of the square
-      ..style = PaintingStyle.stroke // This makes it a border
-      ..strokeWidth = 10.0;
-
-    final borderCanvasPaint = Paint()
-      ..color = Colors.black
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-    canvas.drawRect(
-        Rect.fromPoints(Offset(0, 0), Offset(size.width, size.height)),
-        borderCanvasPaint);
-
-    // Paint for filling the polygon
-    final fillPaint = Paint()
-      ..color = Colors.green.withOpacity(0.5) // Semi-transparent fill color
-      ..style = PaintingStyle.fill;
-    canvas.drawRect(
-        Rect.fromPoints(Offset(0, 0), Offset(size.width, size.height)),
-        borderCanvasPaint);
-
-    for (final point in points) {
-      if (point != null) {
-        Rect rect = Rect.fromCenter(
-            center: point, width: squareSize, height: squareSize);
-        canvas.drawRect(rect, borderPaint);
-      }
-    }
-    // Draw the polygon's filled region
-    Path path = Path()..moveTo(points.first!.dx, points.first!.dy);
-    for (int i = 1; i < points.length; i++) {
-      if (points[i] != null) {
-        path.lineTo(points[i]!.dx, points[i]!.dy);
-      }
-    }
-    path.close();
-    canvas.drawPath(path, fillPaint);
-
-    // Draw lines between the points
-    for (int i = 0; i < points.length - 1; i++) {
-      if (points[i] != null && points[i + 1] != null) {
-        canvas.drawLine(points[i]!, points[i + 1]!, linePaint);
-      }
-    }
-
-    // Connect the last and first points to close the polygon
-    if (points.length > 2) {
-      if (points.last != null && points.first != null) {
-        canvas.drawLine(points.last!, points.first!, linePaint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
   }
 }
