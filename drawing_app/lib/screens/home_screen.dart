@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:drawing_app/screens/view_all_maps.dart';
 import 'package:flutter/material.dart';
@@ -47,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> _showSaveDialog() async {
+  void _showSaveDialog() async {
     String fileName = ''; // To store the name entered by the user
 
     await showDialog(
@@ -95,7 +94,6 @@ class _HomeScreenState extends State<HomeScreen> {
     String base64String = '';
     RenderRepaintBoundary boundary =
         _repaintKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-    //var image = await boundary.toImage(pixelRatio: ui.window.devicePixelRatio);
     var image = await boundary.toImage(pixelRatio: 1.0);
     ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     if (byteData != null) {

@@ -1,7 +1,9 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:drawing_app/utils/drawing_canvas.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:http/http.dart' as http;
-import 'dart:ui' as ui;
 import 'dart:convert';
 import '../models/map_file_data.dart';
 import '../utils/polygon_painter.dart';
@@ -26,6 +28,8 @@ class ViewOneMapScreen extends StatefulWidget {
 
 class _ViewOneMapScreenState extends State<ViewOneMapScreen> {
   // All states
+  final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
   final _repaintKey = GlobalKey();
   late Map<String, dynamic> mapData;
   List<Offset> points = [];
@@ -46,7 +50,6 @@ class _ViewOneMapScreenState extends State<ViewOneMapScreen> {
   }
 
   Future<void> _fetchDataById() async {
-    print('this is mapId: ${widget.mapId}');
     try {
       final response = await http.get(
           Uri.parse('https://map-editor-be.onrender.com/map/${widget.mapId}'));
@@ -81,85 +84,189 @@ class _ViewOneMapScreenState extends State<ViewOneMapScreen> {
     }
   }
 
+  Future<void> _showSaveDialog() async {
+    String currentMapName = mapData['name'] ?? 'Map File';
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Are you sure you want to save updated map?"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text("File name: $currentMapName"),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: const Text("Cancel"),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text("Save Image"),
+              onPressed: () {
+                _saveImage(context);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _saveImage(BuildContext context) async {
+    String base64String = '';
+    RenderRepaintBoundary boundary =
+        _repaintKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+    var image = await boundary.toImage(pixelRatio: 1.0);
+    ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    if (byteData != null) {
+      Uint8List pngBytes = byteData.buffer.asUint8List();
+      base64String = base64.encode(pngBytes); // assigning base64 string
+    }
+    // Create the zones object
+    List<Zone> zones = [
+      Zone(points: points.map((e) => Point(x: e.dx, y: e.dy)).toList()),
+    ];
+    ImageData data = ImageData(
+      name: mapData['name'],
+      imageUrl: base64String,
+      zones: zones,
+    );
+
+    String url = 'https://map-editor-be.onrender.com/map/${widget.mapId}';
+    try {
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(data),
+      );
+
+      if (response.statusCode == 200) {
+        print('Successfully updated data to the backend.');
+        scaffoldMessengerKey.currentState?.showSnackBar(
+          const SnackBar(
+            content: Text('Map updated successfully!'),
+            duration: Duration(seconds: 5),
+          ),
+        );
+        Future.delayed(const Duration(seconds: 5)).then((_) {
+          Navigator.of(context).pop();
+        });
+      } else {
+        print('Failed to upload data. Status code: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error uploading data: $error');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Map Details'),
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Center(
-              child: FittedBox(
-                child: RepaintBoundary(
-                  key: _repaintKey,
-                  child: Transform(
-                    transform: transformationMatrix,
-                    child: Container(
-                      constraints: const BoxConstraints(
-                        maxWidth: canvasWidth,
-                        maxHeight: canvasHeight,
-                      ),
-                      child: _isDrawingEnabled
-                          ? DrawingCanvas(
-                              points: points,
-                              onPointsUpdated: _onPointsUpdated,
-                            )
-                          : GestureDetector(
-                              onPanDown: (details) {
-                                setState(() {
-                                  for (var point in points!) {
-                                    if (pointTapped(
-                                        details.localPosition, point)) {
-                                      selectedPoint = point;
-                                      break;
-                                    }
-                                  }
-                                });
-                              },
-                              onPanUpdate: (details) {
-                                if (selectedPoint != null) {
+    return ScaffoldMessenger(
+      key: scaffoldMessengerKey,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Map Details'),
+        ),
+        body: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Center(
+                child: FittedBox(
+                  child: RepaintBoundary(
+                    key: _repaintKey,
+                    child: Transform(
+                      transform: transformationMatrix,
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          maxWidth: canvasWidth,
+                          maxHeight: canvasHeight,
+                        ),
+                        child: _isDrawingEnabled
+                            ? DrawingCanvas(
+                                points: points,
+                                onPointsUpdated: _onPointsUpdated,
+                              )
+                            : GestureDetector(
+                                onPanDown: (details) {
                                   setState(() {
-                                    int index = points.indexOf(selectedPoint!);
-                                    if (index != -1) {
-                                      points[index] = details.localPosition;
-                                      selectedPoint = details.localPosition;
+                                    for (var point in points!) {
+                                      if (pointTapped(
+                                          details.localPosition, point)) {
+                                        selectedPoint = point;
+                                        break;
+                                      }
                                     }
                                   });
-                                }
-                              },
-                              onPanEnd: (details) {
-                                setState(() {
-                                  selectedPoint = null;
-                                });
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.black),
-                                ),
-                                child: CustomPaint(
-                                  painter: PolygonPainter(
-                                    points: points,
-                                    canvasWidth: canvasWidth,
-                                    canvasHeight: canvasHeight,
-                                    transformationMatrix: transformationMatrix,
+                                },
+                                onPanUpdate: (details) {
+                                  if (selectedPoint != null) {
+                                    setState(() {
+                                      int index =
+                                          points.indexOf(selectedPoint!);
+                                      if (index != -1) {
+                                        points[index] = details.localPosition;
+                                        selectedPoint = details.localPosition;
+                                      }
+                                    });
+                                  }
+                                },
+                                onPanEnd: (details) {
+                                  setState(() {
+                                    selectedPoint = null;
+                                  });
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.black),
                                   ),
-                                  child: Container(),
+                                  child: CustomPaint(
+                                    painter: PolygonPainter(
+                                      points: points,
+                                      canvasWidth: canvasWidth,
+                                      canvasHeight: canvasHeight,
+                                      transformationMatrix:
+                                          transformationMatrix,
+                                    ),
+                                    child: Container(),
+                                  ),
                                 ),
                               ),
-                            ),
+                      ),
                     ),
                   ),
                 ),
               ),
+        floatingActionButton: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            FloatingActionButton(
+              onPressed: () {
+                setState(() {
+                  _isDrawingEnabled = !_isDrawingEnabled;
+                });
+              },
+              tooltip: 'Edit map',
+              child: const Icon(Icons.edit),
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            _isDrawingEnabled = !_isDrawingEnabled;
-          });
-        },
-        child: const Icon(Icons.edit),
+            const SizedBox(height: 8),
+            FloatingActionButton(
+              onPressed: _showSaveDialog,
+              tooltip: 'Save Image',
+              heroTag: null,
+              child: const Icon(Icons.save),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }
