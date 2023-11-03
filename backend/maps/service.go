@@ -102,13 +102,11 @@ func (s *Service) getMapById(ctx context.Context, id string) (db.Map, error) {
 }
 
 func (s *Service) createNewZone(ctx context.Context, zone pgtype.Polygon, id uuid.UUID) (error) {
-	date := time.Now().Local()
 	uuid := pgtype.UUID{}
 	uuid.Scan(id.String())
 	newZone, err := s.db.CreateZone(ctx, db.CreateZoneParams{
 		Zone: zone,
 		MapID: uuid,
-		CreatedAt: date,
 	})
 	log.Println(newZone)
 	if err != nil {
@@ -170,13 +168,11 @@ func (s *Service) updateMap(ctx context.Context, req MapCreationReq, id string) 
 }
 
 func (s *Service) updateZone(ctx context.Context, zone pgtype.Polygon, id string) (error) {
-	date := time.Now().Local()
 	uuid := pgtype.UUID{}
 	uuid.Scan(id)
 	err := s.db.UpdateZoneById(ctx, db.UpdateZoneByIdParams{
 		Zone: zone,
 		MapID: uuid,
-		CreatedAt: date,
 	})
 	if err != nil {
 		log.Println(err)

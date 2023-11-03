@@ -1,8 +1,8 @@
 package maps
 
 import (
+	"log"
 	"net/http"
-
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
 )
@@ -13,11 +13,12 @@ type Controller struct {
 }
 
 type MapCreationReq struct {
-	Name string `json:"name"`
+	Name string `json:"name" validate:"required"`
 	Image_url string `json:"image_url"`
-	Zones []pgtype.Polygon `json:"zones"`
+	Zones []pgtype.Polygon `json:"zones" validate:"numberOfPoints"`
 	Routes []pgtype.Path `json:"routes"`
 }
+
 
 func NewController(e *echo.Echo, service *Service) *Controller {
 	c:= &Controller{e: e, service: service}
@@ -27,6 +28,24 @@ func NewController(e *echo.Echo, service *Service) *Controller {
 	e.PUT("/map/:id", c.updateMap)
 	e.DELETE("/map/:id", c.deleteMap)
 	return c
+}
+
+func (con *Controller) createMap(c echo.Context) error {
+	ctx := c.Request().Context()
+	req := MapCreationReq{}
+	log.Println(req)
+	if err := c.Bind(&req); err != nil {
+    	return c.JSON(http.StatusBadRequest, BadRequestError())
+  	}
+	if err := c.Validate(req); err != nil {
+		log.Println(err)
+		return err
+	}
+
+	if err := con.service.createNewMap(ctx, req); err != nil {
+		return c.JSON(http.StatusInternalServerError, err)
+	}
+	return c.String(http.StatusOK, "Created new map successfully")
 }
 
 func (con *Controller) getMapById(c echo.Context) error {
@@ -61,20 +80,6 @@ func (con *Controller) getMaps(c echo.Context) error {
 	return c.JSON(http.StatusOK, maps)
 }
 
-func (con *Controller) createMap(c echo.Context) error {
-	ctx := c.Request().Context()
-	req := MapCreationReq{}
-	
-	if err := c.Bind(&req); err != nil {
-    	return c.JSON(http.StatusBadRequest, BadRequestError())
-  	}
-
-	if err := con.service.createNewMap(ctx, req); err != nil {
-		return c.JSON(http.StatusInternalServerError, err)
-	}
-	return c.String(http.StatusOK, "Created new map successfully")
-}
-
 func (con *Controller) updateMap(c echo.Context) error {
 	ctx := c.Request().Context()
 	id := c.Param("id")
@@ -82,6 +87,10 @@ func (con *Controller) updateMap(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
     	return c.JSON(http.StatusBadRequest, BadRequestError())
   	}
+	if err := c.Validate(req); err != nil {
+		log.Println(err)
+		return err
+	}
 
 	if err := con.service.updateMap(ctx, req, id); err != nil {
 		return c.JSON(http.StatusInternalServerError, err)
