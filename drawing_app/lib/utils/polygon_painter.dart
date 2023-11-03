@@ -5,7 +5,6 @@ export 'polygon_painter.dart';
 class PolygonPainter extends CustomPainter {
   final List<Offset?> points;
   final Function(Offset)? onNewPointAdded;
-  final Size? screenSize;
   final Matrix4 transformationMatrix;
   final double canvasWidth;
   final double canvasHeight;
@@ -13,7 +12,6 @@ class PolygonPainter extends CustomPainter {
   PolygonPainter({
     required this.points,
     this.onNewPointAdded,
-    this.screenSize,
     required this.transformationMatrix,
     required this.canvasWidth,
     required this.canvasHeight,
@@ -21,19 +19,13 @@ class PolygonPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Use the transformation matrix to apply scaling and translation
-    canvas.transform(transformationMatrix.storage);
-
     final borderPaint = Paint()
       ..color = Colors.blue
       ..style = PaintingStyle.stroke
       ..strokeWidth = 5.0;
 
-    // If points are empty and allowDrawing is true, just draw an empty canvas
-    if (points.isEmpty
-        //&& allowDrawing
-        ) {
-      // The canvas is ready for user drawing. Nothing else to render.
+    // If points are empty just render an empty canvas
+    if (points.isEmpty) {
       return;
     }
 

@@ -36,18 +36,6 @@ class _HomeScreenState extends State<HomeScreen> {
         (potentialTap - point).distance < 20.0); // 20.0 is the touch radius
   }
 
-  // Function to scale and position the points
-  void rescalePoints(
-      double oldWidth, double oldHeight, double newWidth, double newHeight) {
-    for (int i = 0; i < points!.length; i++) {
-      if (points![i] != null) {
-        double newX = (points![i]!.dx * newWidth) / oldWidth;
-        double newY = (points![i]!.dy * newHeight) / oldHeight;
-        points![i] = Offset(newX, newY);
-      }
-    }
-  }
-
   @override
   void initState() {
     super.initState();
@@ -91,7 +79,6 @@ class _HomeScreenState extends State<HomeScreen> {
             TextButton(
               child: const Text("Save Image"),
               onPressed: () {
-                // Handle the save image logic here
                 if (fileName != null && fileName!.isNotEmpty) {
                   _saveImage(context, fileName!);
                 }

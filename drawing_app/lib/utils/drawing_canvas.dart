@@ -7,8 +7,6 @@ const double canvasHeight = 600.0;
 
 class DrawingCanvas extends StatefulWidget {
   final List<Offset>? points;
-
-  // final Function(List<Offset>? updatedPoints) onPointsUpdated;
   final void Function(List<Offset>?) onPointsUpdated;
 
   const DrawingCanvas({
