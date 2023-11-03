@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:drawing_app/screens/view_one_map.dart';
 import 'package:flutter/material.dart';
-import '../models/map_file_data.dart'; // replace with your actual path to model
+import '../models/map_file_data.dart';
 
 class ViewAllMapsScreen extends StatelessWidget {
   final List<ImageData> maps;
+  final String mapId = "";
 
   const ViewAllMapsScreen({Key? key, required this.maps}) : super(key: key);
 
@@ -12,7 +14,7 @@ class ViewAllMapsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('All Maps'),
+        title: const Text('All Maps'),
       ),
       body: GridView.builder(
         padding: const EdgeInsets.all(8),
@@ -24,7 +26,6 @@ class ViewAllMapsScreen extends StatelessWidget {
         ),
         itemCount: maps.length,
         itemBuilder: (context, index) {
-          // You can create a custom card widget for your map data
           return _buildMapCard(context, maps[index]);
         },
       ),
@@ -42,19 +43,23 @@ class ViewAllMapsScreen extends StatelessWidget {
           color: Colors.black54,
           child: Text(
             mapData.name,
+            //'ID: ${mapData.id}',
             style: TextStyle(color: Colors.white),
           ),
-        ),
-        child: Image.memory(
-          bytes,
-          fit: BoxFit.cover,
         ),
         footer: Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: () {
-              // Handle the tap event
-              // For example, navigate to a detail page for this map
+              // TODO: Navigate to individual map
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => ViewOneMapScreen(
+                          mapId: mapData.id!,
+                          maps: maps,
+                        )),
+              );
             },
             child: Container(
               padding: const EdgeInsets.all(8),
@@ -66,6 +71,10 @@ class ViewAllMapsScreen extends StatelessWidget {
               ),
             ),
           ),
+        ),
+        child: Image.memory(
+          bytes,
+          fit: BoxFit.cover,
         ),
       ),
     );
