@@ -19,15 +19,13 @@ type Map struct {
 }
 
 type MapAnnotationsRoute struct {
-	ID        uuid.UUID   `json:"id"`
-	CreatedAt time.Time   `json:"created_at"`
-	Route     pgtype.Path `json:"route"`
-	MapID     pgtype.UUID `json:"map_id"`
+	ID    uuid.UUID   `json:"id"`
+	Route pgtype.Path `json:"route"`
+	MapID pgtype.UUID `json:"map_id"`
 }
 
 type MapAnnotationsZone struct {
-	ID        uuid.UUID      `json:"id"`
-	CreatedAt time.Time      `json:"created_at"`
-	Zone      pgtype.Polygon `json:"zone"`
-	MapID     pgtype.UUID    `json:"map_id"`
+	ID    uuid.UUID      `json:"id"`
+	Zone  pgtype.Polygon `json:"zone"`
+	MapID pgtype.UUID    `json:"map_id"`
 }

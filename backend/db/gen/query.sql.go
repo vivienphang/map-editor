@@ -40,51 +40,39 @@ func (q *Queries) CreateMap(ctx context.Context, arg CreateMapParams) (Map, erro
 
 const createRoute = `-- name: CreateRoute :one
 INSERT INTO
-    map_annotations_routes (route, map_id, created_at)
+    map_annotations_routes (route, map_id)
 VALUES
-    ($1, $2, $3) RETURNING id, created_at, route, map_id
+    ($1, $2) RETURNING id, route, map_id
 `
 
 type CreateRouteParams struct {
-	Route     pgtype.Path `json:"route"`
-	MapID     pgtype.UUID `json:"map_id"`
-	CreatedAt time.Time   `json:"created_at"`
+	Route pgtype.Path `json:"route"`
+	MapID pgtype.UUID `json:"map_id"`
 }
 
 func (q *Queries) CreateRoute(ctx context.Context, arg CreateRouteParams) (MapAnnotationsRoute, error) {
-	row := q.db.QueryRow(ctx, createRoute, arg.Route, arg.MapID, arg.CreatedAt)
+	row := q.db.QueryRow(ctx, createRoute, arg.Route, arg.MapID)
 	var i MapAnnotationsRoute
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.Route,
-		&i.MapID,
-	)
+	err := row.Scan(&i.ID, &i.Route, &i.MapID)
 	return i, err
 }
 
 const createZone = `-- name: CreateZone :one
 INSERT INTO
-    map_annotations_zones (zone, map_id, created_at)
+    map_annotations_zones (zone, map_id)
 VALUES
-    ($1, $2, $3) RETURNING id, created_at, zone, map_id
+    ($1, $2) RETURNING id, zone, map_id
 `
 
 type CreateZoneParams struct {
-	Zone      pgtype.Polygon `json:"zone"`
-	MapID     pgtype.UUID    `json:"map_id"`
-	CreatedAt time.Time      `json:"created_at"`
+	Zone  pgtype.Polygon `json:"zone"`
+	MapID pgtype.UUID    `json:"map_id"`
 }
 
 func (q *Queries) CreateZone(ctx context.Context, arg CreateZoneParams) (MapAnnotationsZone, error) {
-	row := q.db.QueryRow(ctx, createZone, arg.Zone, arg.MapID, arg.CreatedAt)
+	row := q.db.QueryRow(ctx, createZone, arg.Zone, arg.MapID)
 	var i MapAnnotationsZone
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.Zone,
-		&i.MapID,
-	)
+	err := row.Scan(&i.ID, &i.Zone, &i.MapID)
 	return i, err
 }
 
@@ -155,7 +143,7 @@ func (q *Queries) GetMaps(ctx context.Context) ([]Map, error) {
 
 const getPaths = `-- name: GetPaths :many
 SELECT
-    id, created_at, route, map_id
+    id, route, map_id
 FROM
     map_annotations_routes
 `
@@ -169,12 +157,7 @@ func (q *Queries) GetPaths(ctx context.Context) ([]MapAnnotationsRoute, error) {
 	var items []MapAnnotationsRoute
 	for rows.Next() {
 		var i MapAnnotationsRoute
-		if err := rows.Scan(
-			&i.ID,
-			&i.CreatedAt,
-			&i.Route,
-			&i.MapID,
-		); err != nil {
+		if err := rows.Scan(&i.ID, &i.Route, &i.MapID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -248,7 +231,7 @@ func (q *Queries) GetZoneById(ctx context.Context, id uuid.UUID) (pgtype.Polygon
 
 const getZones = `-- name: GetZones :many
 SELECT
-    id, created_at, zone, map_id
+    id, zone, map_id
 FROM
     map_annotations_zones
 `
@@ -262,12 +245,7 @@ func (q *Queries) GetZones(ctx context.Context) ([]MapAnnotationsZone, error) {
 	var items []MapAnnotationsZone
 	for rows.Next() {
 		var i MapAnnotationsZone
-		if err := rows.Scan(
-			&i.ID,
-			&i.CreatedAt,
-			&i.Zone,
-			&i.MapID,
-		); err != nil {
+		if err := rows.Scan(&i.ID, &i.Zone, &i.MapID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -337,19 +315,17 @@ const updateZoneById = `-- name: UpdateZoneById :exec
 UPDATE
     map_annotations_zones
 SET
-    zone = $2,
-    created_at = $3
+    zone = $2
 WHERE
     map_id = $1
 `
 
 type UpdateZoneByIdParams struct {
-	MapID     pgtype.UUID    `json:"map_id"`
-	Zone      pgtype.Polygon `json:"zone"`
-	CreatedAt time.Time      `json:"created_at"`
+	MapID pgtype.UUID    `json:"map_id"`
+	Zone  pgtype.Polygon `json:"zone"`
 }
 
 func (q *Queries) UpdateZoneById(ctx context.Context, arg UpdateZoneByIdParams) error {
-	_, err := q.db.Exec(ctx, updateZoneById, arg.MapID, arg.Zone, arg.CreatedAt)
+	_, err := q.db.Exec(ctx, updateZoneById, arg.MapID, arg.Zone)
 	return err
 }

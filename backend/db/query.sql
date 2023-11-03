@@ -58,15 +58,15 @@ WHERE
 
 -- name: CreateZone :one
 INSERT INTO
-    map_annotations_zones (zone, map_id, created_at)
+    map_annotations_zones (zone, map_id)
 VALUES
-    ($1, $2, $3) RETURNING *;
+    ($1, $2) RETURNING *;
 
 -- name: CreateRoute :one
 INSERT INTO
-    map_annotations_routes (route, map_id, created_at)
+    map_annotations_routes (route, map_id)
 VALUES
-    ($1, $2, $3) RETURNING *;
+    ($1, $2) RETURNING *;
 
 -- name: CreateMap :one
 INSERT INTO
@@ -86,8 +86,7 @@ WHERE
 UPDATE
     map_annotations_zones
 SET
-    zone = $2,
-    created_at = $3
+    zone = $2
 WHERE
     map_id = $1;
 
