@@ -43,15 +43,13 @@ class ViewAllMapsScreen extends StatelessWidget {
           color: Colors.black54,
           child: Text(
             mapData.name,
-            //'ID: ${mapData.id}',
-            style: TextStyle(color: Colors.white),
+            style: const TextStyle(color: Colors.white),
           ),
         ),
         footer: Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: () {
-              // TODO: Navigate to individual map
               Navigator.push(
                 context,
                 MaterialPageRoute(

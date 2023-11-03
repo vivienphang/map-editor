@@ -6,25 +6,27 @@ class PolygonPainter extends CustomPainter {
   final List<Offset?> points;
   final Function(Offset)? onNewPointAdded;
   final Size? screenSize;
-
-  // NEW
   final Matrix4 transformationMatrix;
+  final double canvasWidth;
+  final double canvasHeight;
 
-  PolygonPainter(
-      {required this.points,
-      this.onNewPointAdded,
-      this.screenSize,
-
-      //NEW
-      required this.transformationMatrix});
+  PolygonPainter({
+    required this.points,
+    this.onNewPointAdded,
+    this.screenSize,
+    required this.transformationMatrix,
+    required this.canvasWidth,
+    required this.canvasHeight,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    // NEW Use the transformation matrix to apply scaling and translation
+    // Use the transformation matrix to apply scaling and translation
     canvas.transform(transformationMatrix.storage);
-    final paint = Paint()
-      ..color = Colors.red
-      ..strokeCap = StrokeCap.round
+
+    final borderPaint = Paint()
+      ..color = Colors.blue
+      ..style = PaintingStyle.stroke
       ..strokeWidth = 5.0;
 
     // If points are empty and allowDrawing is true, just draw an empty canvas
@@ -35,26 +37,21 @@ class PolygonPainter extends CustomPainter {
       return;
     }
 
-    // Existing points are not empty, scale them to the canvas size
+    // Scale the points using canvasWidth and canvasHeight
     final List<Offset> scaledPoints =
         points.where((point) => point != null).map((point) {
-      final double scaleX = size.width / screenSize!.width;
-      final double scaleY = size.height / screenSize!.height;
+      final double scaleX = canvasWidth / size.width;
+      final double scaleY = canvasHeight / size.height;
       return Offset(point!.dx * scaleX, point.dy * scaleY);
     }).toList();
 
     // Draw the polygon if points are not empty
     if (scaledPoints.isNotEmpty) {
       final path = Path()..addPolygon(scaledPoints, true);
-      canvas.drawPath(path, paint);
+      canvas.drawPath(path, borderPaint);
     }
 
     final double squareSize = 10.0;
-
-    final borderPaint = Paint()
-      ..color = Colors.blue // Color of the border of the square
-      ..style = PaintingStyle.stroke // This makes it a border
-      ..strokeWidth = 10.0;
 
     final borderCanvasPaint = Paint()
       ..color = Colors.black
@@ -92,14 +89,14 @@ class PolygonPainter extends CustomPainter {
     // Draw lines between the points
     for (int i = 0; i < points.length - 1; i++) {
       if (points[i] != null && points[i + 1] != null) {
-        canvas.drawLine(points[i]!, points[i + 1]!, paint);
+        canvas.drawLine(points[i]!, points[i + 1]!, borderPaint);
       }
     }
 
     // Connect the last and first points to close the polygon
     if (points.length > 2) {
       if (points.last != null && points.first != null) {
-        canvas.drawLine(points.last!, points.first!, paint);
+        canvas.drawLine(points.last!, points.first!, borderPaint);
       }
     }
   }

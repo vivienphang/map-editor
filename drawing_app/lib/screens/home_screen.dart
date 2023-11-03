@@ -8,7 +8,11 @@ import 'package:flutter/rendering.dart';
 import 'dart:ui' as ui;
 import 'package:http/http.dart' as http;
 import '../models/map_file_data.dart';
-import '../utils/polygon_painter.dart';
+import '../utils/drawing_canvas.dart';
+
+// Global variables
+const double canvasWidth = 500.0;
+const double canvasHeight = 600.0;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -18,22 +22,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // All states
   final GlobalKey _repaintKey = GlobalKey();
-  List<Offset?> points = [];
-  List<ImageData> maps = [];
-
-  // Fixed canvas dimensions
-  static const double canvasWidth = 800.0;
-  static const double canvasHeight = 600.0;
-
-  // Define scale value for zoom level
-  double _currentScale = 1.0;
-  Offset _currentOffset = Offset.zero; // Focal point where user starts scaling
-  // Keeping track of scale and translation transformations.
   final Matrix4 _transformationMatrix = Matrix4.identity();
-
-  // selectedPoint: to keep track of the currently dragged point
-  Offset? selectedPoint;
+  List<Offset>? points = [];
+  List<ImageData> maps = [];
+  Offset? selectedPoint; // Track current dragged point
+  bool _isDrawingEnabled = false;
 
   // Function to determine if a point was tapped
   bool pointTapped(Offset potentialTap, Offset? point) {
@@ -44,11 +39,11 @@ class _HomeScreenState extends State<HomeScreen> {
   // Function to scale and position the points
   void rescalePoints(
       double oldWidth, double oldHeight, double newWidth, double newHeight) {
-    for (int i = 0; i < points.length; i++) {
-      if (points[i] != null) {
-        double newX = (points[i]!.dx * newWidth) / oldWidth;
-        double newY = (points[i]!.dy * newHeight) / oldHeight;
-        points[i] = Offset(newX, newY);
+    for (int i = 0; i < points!.length; i++) {
+      if (points![i] != null) {
+        double newX = (points![i]!.dx * newWidth) / oldWidth;
+        double newY = (points![i]!.dy * newHeight) / oldHeight;
+        points![i] = Offset(newX, newY);
       }
     }
   }
@@ -65,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showSaveDialog() async {
-    String fileName = ''; // to store the name entered by the user
+    String fileName = ''; // To store the name entered by the user
 
     await showDialog(
       context: context,
@@ -79,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 10),
               TextField(
                 onChanged: (value) {
-                  fileName = value; // updating fileName on each change
+                  fileName = value; // Updating fileName on each change
                 },
                 decoration: const InputDecoration(
                   hintText: "Save file name",
@@ -125,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
       name: fileName,
       imageUrl: base64String,
       zones: [
-        Zone(points: points.map((e) => Point(x: e!.dx, y: e.dy)).toList())
+        Zone(points: points!.map((e) => Point(x: e!.dx, y: e.dy)).toList())
       ],
     );
     const url = "https://map-editor-be.onrender.com/map";
@@ -247,65 +242,18 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Transform(
                 transform: _transformationMatrix,
                 child: Container(
-                  constraints: const BoxConstraints(
-                    maxWidth: canvasWidth,
-                    maxHeight: canvasHeight,
-                  ),
-                  child: Builder(
-                    builder: (context) => GestureDetector(
-                      onPanDown: (details) {
-                        bool isExistingPoint = false;
-                        for (var point in points) {
-                          if (pointTapped(details.localPosition, point)) {
-                            selectedPoint = point;
-                            isExistingPoint = true;
-                            break;
-                          }
-                        }
-                        if (!isExistingPoint) {
-                          setState(() {
-                            points.add(details.localPosition);
-                          });
-                        }
-                      },
-                      onPanUpdate: (details) {
-                        if (selectedPoint != null) {
-                          // Clamp the position within the bounds
-                          Offset newPosition = Offset(
-                            details.localPosition.dx.clamp(0, canvasWidth),
-                            details.localPosition.dy.clamp(0, canvasHeight),
-                          );
-                          setState(() {
-                            // look for selectedPoint in points list, if not found, it will return -1
-                            int index = points.indexOf(selectedPoint);
-                            // if it is found, update its index to the new position
-                            if (index != -1) {
-                              points[index] = newPosition;
-                            }
-                            selectedPoint =
-                                newPosition; // Update the reference for continuous dragging
-                          });
-                        }
-                      },
-                      // When user stops dragging (lifts their finger/ release the mouse)
-                      onPanEnd: (details) {
-                        selectedPoint = null; // Clear the reference
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                            border: Border.all(color: Colors.black, width: 1)),
-                        child: CustomPaint(
-                          painter: PolygonPainter(
-                            points: points,
-                            screenSize: canvasSize,
-                            transformationMatrix: Matrix4.identity(),
-                          ),
-                          child: Container(),
-                        ),
-                      ),
+                    constraints: const BoxConstraints(
+                      maxWidth: canvasWidth,
+                      maxHeight: canvasHeight,
                     ),
-                  ),
-                ),
+                    child: DrawingCanvas(
+                      points: points,
+                      onPointsUpdated: (updatedPoints) {
+                        setState(() {
+                          points = updatedPoints;
+                        });
+                      },
+                    )),
               ),
             ),
           ),
@@ -314,22 +262,23 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             FloatingActionButton(
-              child: const Icon(Icons.clear),
               onPressed: () {
                 setState(() {
                   points = [];
                 });
               },
               tooltip: 'Clear',
-              heroTag: null, // Adding this to avoid Hero tag conflict error
+              heroTag: null,
+              child: const Icon(Icons.clear),
             ),
             const SizedBox(height: 8),
             FloatingActionButton(
-              child: const Icon(Icons.save),
               onPressed: _showSaveDialog,
               tooltip: 'Save Image',
-              heroTag: null, // Adding this to avoid Hero tag conflict error
+              heroTag: null,
+              child: const Icon(Icons.save),
             ),
+            const SizedBox(height: 8),
           ],
         ),
       );
