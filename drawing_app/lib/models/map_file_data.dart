@@ -3,12 +3,14 @@ import 'dart:convert';
 export 'map_file_data.dart';
 
 class ImageData {
+  final String? id;
   final String name;
   final String imageUrl;
   final List<Zone>? zones;
   final List<dynamic>? routes; // placeholder
 
   ImageData({
+    this.id,
     required this.name,
     required this.imageUrl,
     this.zones,
@@ -17,6 +19,7 @@ class ImageData {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'name': name,
       'image_url': imageUrl,
       'zones': zones?.map((zone) => zone.toJson()).toList(),
@@ -26,6 +29,7 @@ class ImageData {
 
   factory ImageData.fromJson(Map<String, dynamic> json) {
     return ImageData(
+      id: json['id'],
       name: json['name'],
       imageUrl: json['image_url'],
       zones: json['zones'] != null
