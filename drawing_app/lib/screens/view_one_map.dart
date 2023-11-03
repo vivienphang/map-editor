@@ -155,10 +155,10 @@ class _ViewOneMapScreenState extends State<ViewOneMapScreen> {
         scaffoldMessengerKey.currentState?.showSnackBar(
           const SnackBar(
             content: Text('Map updated successfully!'),
-            duration: Duration(seconds: 5),
+            duration: Duration(seconds: 3),
           ),
         );
-        Future.delayed(const Duration(seconds: 5)).then((_) {
+        Future.delayed(const Duration(seconds: 1)).then((_) {
           Navigator.of(context).pop();
         });
       } else {

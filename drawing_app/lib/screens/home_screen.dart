@@ -27,7 +27,6 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Offset>? points = [];
   List<ImageData> maps = [];
   Offset? selectedPoint; // Track current dragged point
-  bool _isDrawingEnabled = false;
 
   // Function to determine if a point was tapped
   bool pointTapped(Offset potentialTap, Offset? point) {
@@ -133,11 +132,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-      Size canvasSize = const Size(canvasWidth, canvasHeight);
-
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Image Editor'),
+          title: const Text('Map Editor'),
           actions: [
             PopupMenuButton<String>(
               onSelected: (String result) async {
@@ -147,8 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       barrierDismissible: false,
                       builder: (BuildContext context) {
                         return FutureBuilder<List<ImageData>>(
-                          future:
-                              fetchData(), // Your async data fetching operation
+                          future: fetchData(),
                           builder: (BuildContext context,
                               AsyncSnapshot<List<ImageData>> snapshot) {
                             if (snapshot.connectionState ==
@@ -275,19 +271,12 @@ Future<List<ImageData>> fetchData() async {
   const String url = 'https://map-editor-be.onrender.com/maps';
 
   try {
-    print('fetching data...');
     final response = await http.get(Uri.parse(url));
-    print('Response status: ${response.statusCode}');
 
     if (response.statusCode == 200) {
       List<dynamic> mapsJson = json.decode(response.body);
       List<ImageData> maps =
           mapsJson.map((json) => ImageData.fromJson(json)).toList();
-      // This will print the JSON string representation of each ImageData instance in the list.
-      for (var map in maps) {
-        print(map
-            .toString()); // Since toString is overridden, it prints JSON string
-      }
       return maps;
     } else {
       throw Exception('Failed to load maps');

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui' as ui;
 export 'polygon_painter.dart';
 
 class PolygonPainter extends CustomPainter {
